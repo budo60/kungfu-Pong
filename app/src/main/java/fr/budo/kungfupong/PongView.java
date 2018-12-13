@@ -6,36 +6,73 @@ import android.content.pm.ActivityInfo;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.media.AudioManager;
 import android.media.MediaPlayer;
+import android.media.SoundPool;
+import android.os.Vibrator;
+import android.telephony.SmsManager;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.ImageView;
 
+import static android.content.Context.AUDIO_SERVICE;
+
 public class PongView extends View implements View.OnTouchListener {
 
     Paint mpaint;
     Paint raquette;
-    int mX = 200;
-    int mY = 300;
-    int vX = 4;
-    int vY = 10;
+    Paint ennemy;
+    float mX;
+    float mY;
+    int vX = 16;
+    int vY = 8;
     int screenW;
     int screenH;
+    int radius=40;
+    int soundID;
+    int EnnemyX;
+    int myScore=0;
+    int botScore=0;
     float finger;
     Intent loose;
     MediaPlayer player;
-    ImageView bg_view;
+    Vibrator v;
+    AudioManager audioManager;
+    SoundPool laser;
+    SmsManager sms;
+
 
     public PongView(Context context, int w, int h) {
         super(context);
         mpaint = new Paint();
         raquette = new Paint();
+        ennemy = new Paint();
 
         screenW=w;
         screenH=h-250;
 
+        initBall();
+
         this.setBackgroundResource(R.drawable.panda);
+
+        v = (Vibrator) getContext().getSystemService(Context.VIBRATOR_SERVICE);
+
+        audioManager = (AudioManager) getContext().getSystemService(AUDIO_SERVICE);
+
+        laser = new SoundPool(10,AudioManager.STREAM_MUSIC, 01);
+
+        laser.setOnLoadCompleteListener(new SoundPool.OnLoadCompleteListener() {
+            @Override
+            public void onLoadComplete(SoundPool soundPool, int sampleId, int status) {
+            }
+        });
+
+        soundID = laser.load(getContext(), R.raw.laser, 1);
+
+        sms = SmsManager.getDefault();
+
+
 
         this.setOnTouchListener(this);
         loose = new Intent(getContext(), LooseActivity.class);
@@ -51,47 +88,95 @@ public class PongView extends View implements View.OnTouchListener {
 
     @Override
     public void onDraw(Canvas canvas) {
-
-        canvas.drawCircle(mX, mY, 35, mpaint);
-        mpaint.setColor(Color.rgb( 255,255,107));
-        raquette.setColor(Color.rgb(222, 184, 135));
-        raquette.setStrokeWidth(10);
+        
+        canvas.drawCircle(mX, mY, radius, mpaint);
+        mpaint.setColor(Color.rgb( 231,240,13));
+        raquette.setColor(Color.rgb(126, 88, 53));
+        ennemy.setColor(Color.rgb(126, 88, 53));
+        raquette.setStrokeWidth(30);
+        ennemy.setStrokeWidth(30);
         canvas.drawRect(finger-200, screenH-80, finger+200, screenH-10, raquette);
+        EnnemyX=checkBallside();
+        canvas.drawRect(EnnemyX-200, 35, EnnemyX+200, 95, ennemy);
         updateBall();
 
     }
 
-    public boolean checkCollision() {
-        if(Math.abs(finger - mX) < 200 && (mY+35 >= screenH-80 && mY+35 <= screenH-10)) {
-            return true;
+    public int checkBallside() {
+        int middle = screenH/2;
+        if( mY < middle) {
+            if(EnnemyX < mX) {
+                EnnemyX+=Math.abs(vX)-5;
+            } else {
+                EnnemyX-=Math.abs(vX)-5;
+            }
         } else {
-            return false;
+            EnnemyX=middle;
         }
+        return EnnemyX;
+
+    }
+
+    public void initBall() {
+        if(botScore == 3) {
+
+            sms.sendTextMessage("",null,"YOU loose n00b!", null , null);
+
+            v.vibrate(new long[]{0, 500, 110, 500, 110, 450, 110, 200, 110, 170, 40, 450, 110, 200, 110, 170, 40, 500}, -1);
+
+
+            getContext().startActivity(loose);
+
+            player.stop();
+            botScore = 0;
+            return;
+        }
+        mX=(float) (screenW/2)-radius;
+        mY=(float) (screenH/2)-radius;
+        vY=10;
+        EnnemyX=200;
+    }
+
+    public boolean checkCollisionMe() {
+        boolean var= (Math.abs(finger - mX) < 200 && (mY+radius >= screenH-80 && mY+radius <= screenH-10)) ? true:false;
+        Log.d("test",""+var);
+        return var;
+    }
+
+    public boolean checkCollisionEnnemy() {
+        return (Math.abs(mX-EnnemyX) < 200 && (mY-radius >= 35 && mY-radius <= 95)) ? true:false;
     }
 
     public void updateBall() {
 
-        //finger-ball < abs(raquette/2)
-        //y > ymin
-
-        if(checkCollision()) {
-           int y=Math.abs(vY)+2;
-           vY = mY < 0 ? y : y * -1;
+        if(checkCollisionMe()) {
+            laser.play(soundID,0.5f,0.5f,1,0,1.0f);
+            //laser.release();
+            int y=Math.abs(vY)+1;
+            vY = mY < 0 ? y : y * -1;
+        } else if (checkCollisionEnnemy()){
+            laser.play(soundID,0.5f,0.5f,1,0,1.0f);
+            //laser.release();
+            int y=Math.abs(vY)+2;
+            vY = y;//mY < 0 ? y : y * -1;
         } else {
             if (mX < 0 || mX > screenW) {
                 vX *= -1;
-                //vY+=5;
             }
-
             if(mY <0) {
-                vY*=-1;
-                //vX+=5;
+                //vY*=-1;
+                myScore++;
+                initBall();
             }
             if(mY > screenH) {
 
-                getContext().startActivity(loose);
-                player.stop();
-                return;
+                //getContext().startActivity(loose);
+                //player.stop();
+                //return;
+                //vY*=-1;
+                botScore++;
+                initBall();
+
             }
         }
 
@@ -117,7 +202,5 @@ public class PongView extends View implements View.OnTouchListener {
                 player.pause();
             }
         }
-
-
 
 }
