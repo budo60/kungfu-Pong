@@ -144,7 +144,12 @@ public class PongView extends View implements View.OnTouchListener {
             } else {
                 EnnemyX-=Math.abs(vX)-5;
             }
-        } else {
+        } else if (!((EnnemyX >= (screenW/2)-5) && (EnnemyX <= (screenW/2)+5))){
+            if(EnnemyX < (screenW/2)) {
+                EnnemyX+=Math.abs(vX)-5;
+            } else {
+                EnnemyX-=Math.abs(vX)-5;
+            }
 
             //EnnemyX=(EnnemyX < (screenW/2)) ? EnnemyX++:EnnemyX--;
 
