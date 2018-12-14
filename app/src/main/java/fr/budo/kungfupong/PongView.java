@@ -3,9 +3,12 @@ package fr.budo.kungfupong;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.Rect;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.media.SoundPool;
@@ -15,6 +18,8 @@ import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.ImageView;
+import android.widget.TextView;
+import android.widget.Toast;
 
 import static android.content.Context.AUDIO_SERVICE;
 
@@ -23,6 +28,7 @@ public class PongView extends View implements View.OnTouchListener {
     Paint mpaint;
     Paint raquette;
     Paint ennemy;
+    Paint sbot,sme;
     float mX;
     float mY;
     int vX = 16;
@@ -32,8 +38,8 @@ public class PongView extends View implements View.OnTouchListener {
     int radius=40;
     int soundID;
     int EnnemyX;
-    int myScore=0;
-    int botScore=0;
+    int myScore;
+    int botScore;
     float finger;
     Intent loose;
     MediaPlayer player;
@@ -41,6 +47,7 @@ public class PongView extends View implements View.OnTouchListener {
     AudioManager audioManager;
     SoundPool laser;
     SmsManager sms;
+    Bitmap bambooBas,bambooBasResized,bambooHaut,bambooHautResized;
 
 
     public PongView(Context context, int w, int h) {
@@ -48,11 +55,16 @@ public class PongView extends View implements View.OnTouchListener {
         mpaint = new Paint();
         raquette = new Paint();
         ennemy = new Paint();
+        sbot = new Paint();
+        sme = new Paint();
 
         screenW=w;
         screenH=h-250;
 
         initBall();
+
+        botScore = 0;
+        myScore = 0;
 
         this.setBackgroundResource(R.drawable.panda);
 
@@ -72,6 +84,14 @@ public class PongView extends View implements View.OnTouchListener {
 
         sms = SmsManager.getDefault();
 
+        bambooBas = BitmapFactory.decodeResource(getResources(),R.drawable.bamboo4);
+        bambooBasResized = Bitmap.createScaledBitmap(bambooBas, 400, 200, false);
+
+        bambooHaut = BitmapFactory.decodeResource(getResources(),R.drawable.bamboo3);
+        bambooHautResized = Bitmap.createScaledBitmap(bambooHaut, 400, 200, false);
+
+
+
 
 
         this.setOnTouchListener(this);
@@ -90,14 +110,28 @@ public class PongView extends View implements View.OnTouchListener {
     public void onDraw(Canvas canvas) {
         
         canvas.drawCircle(mX, mY, radius, mpaint);
-        mpaint.setColor(Color.rgb( 231,240,13));
+        mpaint.setColor(Color.rgb( 204,85,0));
         raquette.setColor(Color.rgb(126, 88, 53));
         ennemy.setColor(Color.rgb(126, 88, 53));
         raquette.setStrokeWidth(30);
         ennemy.setStrokeWidth(30);
-        canvas.drawRect(finger-200, screenH-80, finger+200, screenH-10, raquette);
+
+        sme.setColor(Color.rgb(255,255,255));
+        sbot.setColor(Color.rgb(255,255,255));
+
+        sme.setTextSize(100);
+        sbot.setTextSize(100);
+        canvas.drawText(""+myScore, 10, (screenH/2), sme);
+        canvas.drawText(""+botScore, screenW-70, (screenH/2), sbot);
+        //canvas.drawRect(finger-200, screenH-80, finger+200, screenH-10, raquette);
+        //virtualBamboosBas = new Rect((int)finger-200, screenH-138, (int)finger+200, screenH-10);
+
+        canvas.drawBitmap(bambooBasResized,finger-200, screenH-100, raquette);
+
+        //canvas.drawBitmap(bambooBasResized,virtualBamboosBas,virtualBamboosBas,raquette);
         EnnemyX=checkBallside();
-        canvas.drawRect(EnnemyX-200, 35, EnnemyX+200, 95, ennemy);
+        canvas.drawBitmap(bambooHautResized,EnnemyX-200, -30, ennemy);
+        //canvas.drawRect(EnnemyX-200, 35, EnnemyX+200, 95, ennemy);
         updateBall();
 
     }
@@ -111,7 +145,9 @@ public class PongView extends View implements View.OnTouchListener {
                 EnnemyX-=Math.abs(vX)-5;
             }
         } else {
-            EnnemyX=middle;
+
+            //EnnemyX=(EnnemyX < (screenW/2)) ? EnnemyX++:EnnemyX--;
+
         }
         return EnnemyX;
 
@@ -120,7 +156,9 @@ public class PongView extends View implements View.OnTouchListener {
     public void initBall() {
         if(botScore == 3) {
 
-            sms.sendTextMessage("",null,"YOU loose n00b!", null , null);
+            //sms.sendTextMessage("",null,"YOU loose n00b!", null , null);
+
+            Toast.makeText(getContext(),"You Loose n00b!!",Toast.LENGTH_LONG).show();
 
             v.vibrate(new long[]{0, 500, 110, 500, 110, 450, 110, 200, 110, 170, 40, 450, 110, 200, 110, 170, 40, 500}, -1);
 
@@ -129,17 +167,31 @@ public class PongView extends View implements View.OnTouchListener {
 
             player.stop();
             botScore = 0;
+            myScore = 0;
             return;
+        } else if(myScore == 3) {
+           // sms.sendTextMessage("",null,"YOU WIN Pr0!", null , null);
+
+            Toast.makeText(getContext(),"WINNER WINNER CHICKEN DINNER",Toast.LENGTH_LONG).show();
+
+            v.vibrate(new long[]{0, 500, 110, 500, 110, 450, 110, 200, 110, 170, 40, 450, 110, 200, 110, 170, 40, 500}, -1);
+
+
+            getContext().startActivity(loose);
+
+            player.stop();
+            botScore = 0;
+            myScore = 0;
         }
         mX=(float) (screenW/2)-radius;
         mY=(float) (screenH/2)-radius;
         vY=10;
-        EnnemyX=200;
+        EnnemyX=screenW/2;
     }
 
     public boolean checkCollisionMe() {
-        boolean var= (Math.abs(finger - mX) < 200 && (mY+radius >= screenH-80 && mY+radius <= screenH-10)) ? true:false;
-        Log.d("test",""+var);
+        boolean var= (Math.abs(finger - mX) < 200 && (mY+radius >= screenH-40 && mY+radius <= screenH-10)) ? true:false;
+        //Log.d("test",""+var);
         return var;
     }
 
@@ -150,12 +202,12 @@ public class PongView extends View implements View.OnTouchListener {
     public void updateBall() {
 
         if(checkCollisionMe()) {
-            laser.play(soundID,0.5f,0.5f,1,0,1.0f);
+            laser.play(soundID,0.8f,0.8f,1,0,1.0f);
             //laser.release();
             int y=Math.abs(vY)+1;
             vY = mY < 0 ? y : y * -1;
         } else if (checkCollisionEnnemy()){
-            laser.play(soundID,0.5f,0.5f,1,0,1.0f);
+            laser.play(soundID,0.8f,0.8f,1,0,1.0f);
             //laser.release();
             int y=Math.abs(vY)+2;
             vY = y;//mY < 0 ? y : y * -1;
@@ -170,13 +222,8 @@ public class PongView extends View implements View.OnTouchListener {
             }
             if(mY > screenH) {
 
-                //getContext().startActivity(loose);
-                //player.stop();
-                //return;
-                //vY*=-1;
                 botScore++;
                 initBall();
-
             }
         }
 
@@ -200,7 +247,6 @@ public class PongView extends View implements View.OnTouchListener {
                 player.start();
         } else {
                 player.pause();
-            }
         }
-
+    }
 }
