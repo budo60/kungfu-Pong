@@ -55,7 +55,7 @@ public class PongView extends View implements View.OnTouchListener, SensorEventL
     AudioManager audioManager;
     SoundPool laser;
     SmsManager sms;
-    Bitmap bambooBas,bambooBasResized,bambooHaut,bambooHautResized;
+    Bitmap bambooBas,bambooBasResized,bambooHaut,bambooHautResized, maBalle, maBalleResized;
 
     SensorManager sensorManager;
     //Sensor sensor;
@@ -104,6 +104,9 @@ public class PongView extends View implements View.OnTouchListener, SensorEventL
         bambooHaut = BitmapFactory.decodeResource(getResources(),R.drawable.bamboo3);
         bambooHautResized = Bitmap.createScaledBitmap(bambooHaut, 400, 200, false);
 
+        maBalle=BitmapFactory.decodeResource(getResources(), R.drawable.etoile);
+        maBalleResized = Bitmap.createScaledBitmap(maBalle, 240, 240, false);
+
 
 
         this.setOnTouchListener(this);
@@ -131,8 +134,10 @@ public class PongView extends View implements View.OnTouchListener, SensorEventL
     @Override
     public void onDraw(Canvas canvas) {
         
-        canvas.drawCircle(mX, mY, radius, mpaint);
-        mpaint.setColor(Color.rgb( 204,85,0));
+        //canvas.drawCircle(mX, mY, radius, mpaint);
+        //mpaint.setColor(Color.rgb( 204,85,0));
+        canvas.drawBitmap(maBalleResized,mX,mY,mpaint);
+
         raquette.setColor(Color.rgb(126, 88, 53));
         ennemy.setColor(Color.rgb(126, 88, 53));
         raquette.setStrokeWidth(30);
