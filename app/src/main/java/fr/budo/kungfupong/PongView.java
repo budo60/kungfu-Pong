@@ -9,6 +9,10 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Rect;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.media.SoundPool;
@@ -21,9 +25,13 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import static android.content.Context.AUDIO_SERVICE;
+import java.util.Arrays;
+import java.util.List;
 
-public class PongView extends View implements View.OnTouchListener {
+import static android.content.Context.AUDIO_SERVICE;
+import static android.content.Context.SENSOR_SERVICE;
+
+public class PongView extends View implements View.OnTouchListener, SensorEventListener {
 
     Paint mpaint;
     Paint raquette;
@@ -49,6 +57,10 @@ public class PongView extends View implements View.OnTouchListener {
     SmsManager sms;
     Bitmap bambooBas,bambooBasResized,bambooHaut,bambooHautResized;
 
+    SensorManager sensorManager;
+    //Sensor sensor;
+
+
 
     public PongView(Context context, int w, int h) {
         super(context);
@@ -65,6 +77,8 @@ public class PongView extends View implements View.OnTouchListener {
 
         botScore = 0;
         myScore = 0;
+
+
 
         this.setBackgroundResource(R.drawable.panda);
 
@@ -92,14 +106,22 @@ public class PongView extends View implements View.OnTouchListener {
 
 
 
-
-
         this.setOnTouchListener(this);
         loose = new Intent(getContext(), LooseActivity.class);
         //Log.d("dimz",""+screenW+"----"+screenH);
 
         player = MediaPlayer.create(getContext(), R.raw.kfufightin);
         player.start();
+
+        sensorManager = (SensorManager) getContext().getSystemService(SENSOR_SERVICE);
+
+        sensorManager.registerListener(this,
+                sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER),
+                SensorManager.SENSOR_DELAY_GAME);
+
+
+
+        //Log.e("sensorTest", ""+sensor);
 
 
 
@@ -238,6 +260,8 @@ public class PongView extends View implements View.OnTouchListener {
 
     }
 
+
+
     @Override
     public boolean onTouch(View v, MotionEvent event) {
         finger = event.getX();
@@ -253,5 +277,30 @@ public class PongView extends View implements View.OnTouchListener {
         } else {
                 player.pause();
         }
+    }
+
+    @Override
+    public void onSensorChanged(SensorEvent event) {
+        if (event.sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
+            float[] values = event.values;
+            // Movement
+            float x = values[0];
+            //Log.e("testZzz", ""+x);
+
+            if((x < -1) && ((finger + 200) < screenW)) {
+                finger+=25;
+            } else if ((x > 1) && ((finger-200) >= 0)) {
+                finger -=25;
+            }
+
+            //invalidate();
+
+        }
+
+    }
+
+    @Override
+    public void onAccuracyChanged(Sensor sensor, int accuracy) {
+
     }
 }
